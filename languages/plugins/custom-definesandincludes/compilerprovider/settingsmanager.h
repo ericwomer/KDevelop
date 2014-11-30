@@ -27,6 +27,11 @@
 #include "compilerprovider.h"
 #include "icompiler.h"
 
+#include <QLoggingCategory>
+Q_DECLARE_LOGGING_CATEGORY(SETTINGSMANAGER)
+
+#define settingsManagerDebug() qCDebug(SETTINGSMANAGER)
+
 class KConfig;
 
 namespace KDevelop {
