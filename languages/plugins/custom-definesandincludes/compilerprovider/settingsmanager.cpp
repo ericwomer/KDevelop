@@ -58,30 +58,25 @@ void doWriteSettings( KConfigGroup grp, const QList<ConfigEntry>& paths )
     for ( const auto& path : paths ) {
         KConfigGroup pathgrp = grp.group( ConfigConstants::projectPathPrefix + QString::number( pathIndex++ ) );
         pathgrp.writeEntry( ConfigConstants::projectPathKey, path.path );
+
         {
-            QByteArray tmp;
-            QDataStream s( &tmp, QIODevice::WriteOnly );
-            s.setVersion( QDataStream::Qt_4_5 );
-            s << path.includes;
-            pathgrp.writeEntry( ConfigConstants::includesKey, tmp );
+            int index = 0;
+            KConfigGroup includes(pathgrp.group(ConfigConstants::includesKey));
+            for( auto it = path.includes.begin() ; it != path.includes.end(); ++it){
+                includes.writeEntry("IncludePath" + QString::number(++index), *it);
+            }
+
         }
         {
-            QByteArray tmp;
-            QDataStream s( &tmp, QIODevice::WriteOnly );
-            s.setVersion( QDataStream::Qt_4_5 );
-            // backwards compatible writing
-            QHash<QString, QVariant> defines;
-            defines.reserve(path.defines.size());
+            KConfigGroup defines(pathgrp.group(ConfigConstants::definesKey));
             for (auto it = path.defines.begin(); it != path.defines.end(); ++it) {
-                defines[it.key()] = it.value();
+                defines.writeEntry(it.key(), it.value());
             }
-            s << defines;
-            pathgrp.writeEntry( ConfigConstants::definesKey, tmp );
+
         }
     }
 }
 
-/// @param remove if true all read entries will be removed from the config file
 QList<ConfigEntry> doReadSettings( KConfigGroup grp, bool remove = false )
 {
     QList<ConfigEntry> paths;
@@ -93,20 +88,40 @@ QList<ConfigEntry> doReadSettings( KConfigGroup grp, bool remove = false )
             path.path = pathgrp.readEntry( ConfigConstants::projectPathKey, "" );
 
             {
-                QByteArray tmp = pathgrp.readEntry( ConfigConstants::definesKey, QByteArray() );
-                QDataStream s( tmp );
-                s.setVersion( QDataStream::Qt_4_5 );
-                // backwards compatible reading
-                QHash<QString, QVariant> defines;
-                s >> defines;
-                path.setDefines(defines);
+                KConfigGroup defines(pathgrp.group(ConfigConstants::definesKey));
+                QMap<QString, QString> defMap;
+
+                defMap = defines.entryMap();
+                for( auto it = defMap.constBegin() ; it != defMap.constEnd() ; ++it){
+                    QString key = it.key();
+                    QString value = it.value();
+                    // if either key or value is null it will crash the dialog/KDevelop
+                    if(key.isNull()){
+                        key = "";
+                    }
+                    if(value.isNull()){
+                        value = "";
+                    }
+                    path.defines.insert(key,value);
+                }
             }
 
             {
-                QByteArray tmp = pathgrp.readEntry( ConfigConstants::includesKey, QByteArray() );
-                QDataStream s( tmp );
-                s.setVersion( QDataStream::Qt_4_5 );
-                s >> path.includes;
+                int index = 0;
+                KConfigGroup includes(pathgrp.group(ConfigConstants::includesKey));
+                QMap<QString, QString> incMap = includes.entryMap();
+                for(auto it = incMap.begin() ; it != incMap.end() ; ++it){
+                    QString key = it.key();
+                    QString value = it.value();
+                    if(key.isNull()){
+                        key = "";
+                    }
+                    if(value.isNull()){
+                        value = "";
+                    }
+                    path.includes += value;
+                }
+
             }
             if ( remove ) {
                 pathgrp.deleteGroup();
