@@ -63,7 +63,7 @@ void doWriteSettings( KConfigGroup grp, const QList<ConfigEntry>& paths )
             int index = 0;
             KConfigGroup includes(pathgrp.group(ConfigConstants::includesKey));
             for( auto it = path.includes.begin() ; it != path.includes.end(); ++it){
-                includes.writeEntry("IncludePath" + QString::number(++index), *it);
+                includes.writeEntry(QString::number(++index), *it);
             }
 
         }
@@ -89,35 +89,27 @@ QList<ConfigEntry> doReadSettings( KConfigGroup grp, bool remove = false )
 
             {
                 KConfigGroup defines(pathgrp.group(ConfigConstants::definesKey));
-                QMap<QString, QString> defMap;
+                QMap<QString, QString> defMap = defines.entryMap();
 
-                defMap = defines.entryMap();
                 for( auto it = defMap.constBegin() ; it != defMap.constEnd() ; ++it){
                     QString key = it.key();
-                    QString value = it.value();
-                    // if either key or value is null it will crash the dialog/KDevelop
-                    if(key.isNull()){
-                        key = "";
-                    }
+                    QString value = it.value();                    
                     if(value.isNull()){
-                        value = "";
+                        continue;
                     }
-                    path.defines.insert(key,value);
+                    path.defines.insert(key, value);
+                    path.defines.reserve(defMap.size());
                 }
             }
 
             {
-                int index = 0;
                 KConfigGroup includes(pathgrp.group(ConfigConstants::includesKey));
                 QMap<QString, QString> incMap = includes.entryMap();
+
                 for(auto it = incMap.begin() ; it != incMap.end() ; ++it){
-                    QString key = it.key();
                     QString value = it.value();
-                    if(key.isNull()){
-                        key = "";
-                    }
                     if(value.isNull()){
-                        value = "";
+                        continue;
                     }
                     path.includes += value;
                 }
