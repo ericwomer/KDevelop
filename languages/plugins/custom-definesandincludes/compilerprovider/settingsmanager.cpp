@@ -29,6 +29,8 @@
 #include <interfaces/icore.h>
 #include <interfaces/iplugincontroller.h>
 
+#include <string>
+
 #include "compilerprovider.h"
 
 using namespace KDevelop;
@@ -88,30 +90,51 @@ QList<ConfigEntry> doReadSettings( KConfigGroup grp, bool remove = false )
             path.path = pathgrp.readEntry( ConfigConstants::projectPathKey, "" );
 
             {
-                KConfigGroup defines(pathgrp.group(ConfigConstants::definesKey));
-                QMap<QString, QString> defMap = defines.entryMap();
+                // Backwards compatibility with old style config files.
+                if(pathgrp.hasKey(ConfigConstants::definesKey)) {
+                    QByteArray tmp = pathgrp.readEntry( ConfigConstants::definesKey, QByteArray() );
+                    QDataStream s( tmp );
+                    s.setVersion( QDataStream::Qt_4_5 );
+                    // backwards compatible reading
+                    QHash<QString, QVariant> defines;
+                    s >> defines;
+                    path.setDefines(defines);
+                } else {
 
-                for( auto it = defMap.constBegin() ; it != defMap.constEnd() ; ++it){
-                    QString key = it.key();
-                    QString value = it.value();                    
-                    if(value.isNull()){
-                        continue;
+                    KConfigGroup defines(pathgrp.group(ConfigConstants::definesKey));
+                    QMap<QString, QString> defMap = defines.entryMap();
+
+                    for( auto it = defMap.constBegin() ; it != defMap.constEnd() ; ++it){
+                        QString key = it.key();
+                        QString value = it.value();
+                        if(value.isNull()){
+                            continue;
+                        }
+                        path.defines.insert(key, value);
+                        path.defines.reserve(defMap.size());
                     }
-                    path.defines.insert(key, value);
-                    path.defines.reserve(defMap.size());
                 }
+
             }
 
             {
-                KConfigGroup includes(pathgrp.group(ConfigConstants::includesKey));
-                QMap<QString, QString> incMap = includes.entryMap();
+                // Backwards compatibility with old style config files.
+                if(pathgrp.hasKey(ConfigConstants::includesKey)) {
+                    QByteArray tmp = pathgrp.readEntry( ConfigConstants::includesKey, QByteArray() );
+                    QDataStream s( tmp );
+                    s.setVersion( QDataStream::Qt_4_5 );
+                    s >> path.includes;
+                } else {
+                    KConfigGroup includes(pathgrp.group(ConfigConstants::includesKey));
+                    QMap<QString, QString> incMap = includes.entryMap();
 
-                for(auto it = incMap.begin() ; it != incMap.end() ; ++it){
-                    QString value = it.value();
-                    if(value.isNull()){
-                        continue;
+                    for(auto it = incMap.begin() ; it != incMap.end() ; ++it){
+                        QString value = it.value();
+                        if(value.isNull()){
+                            continue;
+                        }
+                        path.includes += value;
                     }
-                    path.includes += value;
                 }
 
             }
