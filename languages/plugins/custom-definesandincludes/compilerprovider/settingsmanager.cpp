@@ -29,8 +29,6 @@
 #include <interfaces/icore.h>
 #include <interfaces/iplugincontroller.h>
 
-#include <string>
-
 #include "compilerprovider.h"
 
 using namespace KDevelop;
@@ -103,15 +101,16 @@ QList<ConfigEntry> doReadSettings( KConfigGroup grp, bool remove = false )
 
                     KConfigGroup defines(pathgrp.group(ConfigConstants::definesKey));
                     QMap<QString, QString> defMap = defines.entryMap();
-
+                    path.defines.reserve(defMap.size());
                     for( auto it = defMap.constBegin() ; it != defMap.constEnd() ; ++it){
                         QString key = it.key();
                         QString value = it.value();
-                        if(value.isNull()){
+                        if(key.isNull()){
+                            // Toss out the invald key and value since every value needs a key
                             continue;
+                        } else {
+                            path.defines.insert(key, value);
                         }
-                        path.defines.insert(key, value);
-                        path.defines.reserve(defMap.size());
                     }
                 }
 
