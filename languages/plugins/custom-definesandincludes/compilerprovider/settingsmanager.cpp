@@ -77,6 +77,7 @@ void doWriteSettings( KConfigGroup grp, const QList<ConfigEntry>& paths )
     }
 }
 
+/// @param remove if true all read entries will be removed from the config file
 QList<ConfigEntry> doReadSettings( KConfigGroup grp, bool remove = false )
 {
     QList<ConfigEntry> paths;
@@ -104,12 +105,11 @@ QList<ConfigEntry> doReadSettings( KConfigGroup grp, bool remove = false )
                     path.defines.reserve(defMap.size());
                     for( auto it = defMap.constBegin() ; it != defMap.constEnd() ; ++it){
                         QString key = it.key();
-                        QString value = it.value();
-                        if(key.isNull()){
+                        if(key.isEmpty()){
                             // Toss out the invald key and value since every value needs a key
                             continue;
                         } else {
-                            path.defines.insert(key, value);
+                            path.defines.insert(it.key(), it.value());
                         }
                     }
                 }
@@ -129,7 +129,7 @@ QList<ConfigEntry> doReadSettings( KConfigGroup grp, bool remove = false )
 
                     for(auto it = incMap.begin() ; it != incMap.end() ; ++it){
                         QString value = it.value();
-                        if(value.isNull()){
+                        if(value.isEmpty()){
                             continue;
                         }
                         path.includes += value;
