@@ -33,10 +33,6 @@
 #include "../compilerprovider.h"
 #include "../settingsmanager.h"
 
-// RAKE! Remove
-#include<QDebug>
-// RAKE! Remove end
-
 using namespace KDevelop;
 
 void TestCompilerProvider::initTestCase()
