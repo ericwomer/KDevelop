@@ -33,6 +33,10 @@
 #include "../compilerprovider.h"
 #include "../settingsmanager.h"
 
+// RAKE! Remove
+#include<QDebug>
+// RAKE! Remove end
+
 using namespace KDevelop;
 
 void TestCompilerProvider::initTestCase()
@@ -112,7 +116,62 @@ void TestCompilerProvider::testStorageBackwardsCompatible()
     QCOMPARE(entry.defines, defines);
     QStringList includes = QStringList() << "/usr/include/mydir";
     QCOMPARE(entry.includes, includes);
+    qDebug() << entry.path;
     QCOMPARE(entry.path, QString("/"));
+
+    ConfigEntry otherEntry;
+    otherEntry.defines["TEST"] = "lalal";
+    otherEntry.includes = QStringList() << "/foo";
+    otherEntry.path = "test";
+    entries << otherEntry;
+    settings.writePaths(&config, entries);
+
+    auto readWriteEntries = settings.readPaths(&config);
+    QCOMPARE(readWriteEntries.size(), 2);
+    QCOMPARE(readWriteEntries.at(0).path, entry.path);
+    QCOMPARE(readWriteEntries.at(0).defines, entry.defines);
+    QCOMPARE(readWriteEntries.at(0).includes, entry.includes);
+
+    QCOMPARE(readWriteEntries.at(1).path, otherEntry.path);
+    QCOMPARE(readWriteEntries.at(1).defines, otherEntry.defines);
+    QCOMPARE(readWriteEntries.at(1).includes, otherEntry.includes);
+}
+
+void TestCompilerProvider::testNewStorageSystem()
+{
+    SettingsManager settings;
+    QTemporaryFile file;
+    QVERIFY(file.open());
+    QTextStream stream(&file);
+    stream << "[Buildset]\n" <<
+      "BuildItems=@Variant(\\x00\\x00\\x00\\t\\x00\\x00\\x00\\x00\\x01\\x00\\x00\\x00\\x0b\\x00\\x00\\x00\\x00\\x01\\x00\\x00\\x00\\x1a\\x00S\\x00i\\x00m\\x00p\\x00l\\x00e\\x00P\\x00r\\x00o\\x00j\\x00e\\x00c\\x00t)\n\n" <<
+      "[CustomBuildSystem]\n" << "CurrentConfiguration=BuildConfig0\n\n" <<
+      "[CustomDefinesAndIncludes][ProjectPath0]\n" << "Path=/\n\n" <<
+      "[CustomDefinesAndIncludes][ProjectPath0][Defines]\n" <<
+      "_DEBUG=\n" <<
+      "VARIABLE=VALUE\n" <<
+      "[CustomDefinesAndIncludes][ProjectPath0][Includes]\n" <<
+      "1=/usr/include/mydir\n" <<
+      "2=/usr/local/include/mydir\n\n";
+    file.close();
+    KConfig config(file.fileName());
+    auto entries = settings.readPaths(&config);
+    QCOMPARE(entries.size(), 1);
+    ConfigEntry entry = entries.first();
+    QCOMPARE(entry.path, QString("/"));
+    Defines defines;
+    defines["VARIABLE"] = "VALUE";
+    defines["_DEBUG"] = QString();
+    QCOMPARE(entry.defines, defines);
+    QMap<QString, QString> includeMap;
+    includeMap["1"] = "/usr/include/mydir";
+    includeMap["2"] = "/usr/local/include/mydir";
+
+    int i = 0;
+    for(auto it = includeMap.begin(); it != includeMap.end(); it++)
+    {
+        QCOMPARE(entry.includes.at(i++), it.value());
+    }
 
     ConfigEntry otherEntry;
     otherEntry.defines["TEST"] = "lalal";

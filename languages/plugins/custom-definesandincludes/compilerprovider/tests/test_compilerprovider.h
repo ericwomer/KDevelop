@@ -36,6 +36,7 @@ private slots:
     void testSetCompiler();
     void testCompilerIncludesAndDefines();
     void testStorageBackwardsCompatible();
+    void testNewStorageSystem();
 };
 
 #endif
