@@ -112,7 +112,6 @@ void TestCompilerProvider::testStorageBackwardsCompatible()
     QCOMPARE(entry.defines, defines);
     QStringList includes = QStringList() << "/usr/include/mydir";
     QCOMPARE(entry.includes, includes);
-    qDebug() << entry.path;
     QCOMPARE(entry.path, QString("/"));
 
     ConfigEntry otherEntry;
