@@ -26,6 +26,9 @@
 
 #include <QtCore/QObject>
 
+// Needed for testStorageOtherEntry
+#include "../settingsmanager.h"
+
 class TestCompilerProvider : public QObject
 {
     Q_OBJECT
@@ -36,6 +39,7 @@ private slots:
     void testCompilerIncludesAndDefines();
     void testStorageBackwardsCompatible();
     void testCompilerIncludesAndDefinesForProject();
+    void testStorageNewSystem();
 };
 
 #endif
